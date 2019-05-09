@@ -18,9 +18,39 @@ static PHP_FUNCTION(mygmp_get_version) {
 	RETURN_STRING(gmp_version);
 }
 
+static PHP_FUNCTION(mygmp_add) {
+	zend_string *retstr, *arg1, *arg2;
+	mpz_t ret, num1, num2;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &arg1, &arg2) == FAILURE) {
+		return;
+	}
+
+	/* Parse text strings into GMP ints */
+	mpz_inits(ret, num1, num2, NULL);
+	if (mpz_set_str(num1, ZSTR_VAL(arg1), 0) ||
+		mpz_set_str(num2, ZSTR_VAL(arg2), 0)) {
+		mpz_clears(ret, num1, num2, NULL);
+		RETURN_FALSE;
+	}
+
+	/* Perform the operation */
+	mpz_add(ret, num1, num2);
+
+	/* Marshal the sum to a string for output */
+	retstr = zend_string_alloc(mpz_sizeinbase(ret, 10), 0);
+	mpz_get_str(ZSTR_VAL(retstr), 10, ret);
+	ZSTR_LEN(retstr) = strlen(ZSTR_VAL(retstr));
+
+	/* Free memory and return */
+	mpz_clears(ret, num1, num2, NULL);
+	RETURN_STR(retstr);
+}
+
 static zend_function_entry mygmp_functions[] = {
 	PHP_FE(mygmp_version, NULL)
 	PHP_FE(mygmp_get_version, NULL)
+	PHP_FE(mygmp_add, NULL)
 	PHP_FE_END
 };
 
