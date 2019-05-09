@@ -10,6 +10,15 @@
 
 static gmp_randstate_t randstate;
 
+static PHP_FUNCTION(mygmp_version) {
+	php_printf("%s\n", gmp_version);
+}
+
+static zend_function_entry mygmp_functions[] = {
+	PHP_FE(mygmp_version, NULL)
+	PHP_FE_END
+};
+
 static PHP_MINIT_FUNCTION(mygmp) {
 	zend_ulong seed;
 
@@ -39,7 +48,7 @@ static PHP_MINFO_FUNCTION(mygmp) {
 zend_module_entry mygmp_module_entry = {
     STANDARD_MODULE_HEADER,
     "mygmp",
-    NULL, /* functions */
+    mygmp_functions,
     PHP_MINIT(mygmp),
 	PHP_MSHUTDOWN(mygmp),
     NULL, /* RINIT */
