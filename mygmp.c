@@ -14,8 +14,13 @@ static PHP_FUNCTION(mygmp_version) {
 	php_printf("%s\n", gmp_version);
 }
 
+static PHP_FUNCTION(mygmp_get_version) {
+	RETURN_STRING(gmp_version);
+}
+
 static zend_function_entry mygmp_functions[] = {
 	PHP_FE(mygmp_version, NULL)
+	PHP_FE(mygmp_get_version, NULL)
 	PHP_FE_END
 };
 
