@@ -47,10 +47,36 @@ static PHP_FUNCTION(mygmp_add) {
 	RETURN_STR(retstr);
 }
 
+static PHP_FUNCTION(mygmp_random_ints) {
+	zend_ulong count;
+	zend_ulong bits = sizeof(unsigned long) << 3;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "l|l", &count, &bits) == FAILURE) {
+		return;
+	}
+
+	if (count < 0) {
+		php_error(E_WARNING, "Invalid number of random ints requested");
+		RETURN_FALSE;
+	}
+
+	if ((bits < 1) || (bits > (sizeof(unsigned long) << 3))) {
+		php_error(E_WARNING, "Invalid bitsize requested, using %ld instead",
+				  sizeof(unsigned long) << 3);
+	}
+
+	array_init(return_value);
+	while (count--) {
+		unsigned long val = gmp_urandomb_ui(randstate, bits);
+		add_next_index_long(return_value, val);
+	}
+}
+
 static zend_function_entry mygmp_functions[] = {
 	PHP_FE(mygmp_version, NULL)
 	PHP_FE(mygmp_get_version, NULL)
 	PHP_FE(mygmp_add, NULL)
+	PHP_FE(mygmp_random_ints, NULL)
 	PHP_FE_END
 };
 
