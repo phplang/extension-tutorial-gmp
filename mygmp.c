@@ -18,13 +18,9 @@ static PHP_FUNCTION(mygmp_get_version) {
 	RETURN_STRING(gmp_version);
 }
 
-static PHP_FUNCTION(mygmp_add) {
-	zend_string *retstr, *arg1, *arg2;
+static void do_mygmp_add(zval *return_value, zend_string *arg1, zend_string *arg2) {
+	zend_string *retstr;
 	mpz_t ret, num1, num2;
-
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &arg1, &arg2) == FAILURE) {
-		return;
-	}
 
 	/* Parse text strings into GMP ints */
 	mpz_inits(ret, num1, num2, NULL);
@@ -45,6 +41,34 @@ static PHP_FUNCTION(mygmp_add) {
 	/* Free memory and return */
 	mpz_clears(ret, num1, num2, NULL);
 	RETURN_STR(retstr);
+}
+
+static PHP_FUNCTION(mygmp_add) {
+	zend_string *arg1, *arg2;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "SS", &arg1, &arg2) == FAILURE) {
+		return;
+	}
+
+	do_mygmp_add(return_value, arg1, arg2);
+}
+
+static PHP_FUNCTION(mygmp_add_array) {
+	zend_array *arr;
+	zval *a, *b;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "h", &arr) == FAILURE) {
+		return;
+	}
+
+	a = zend_symtable_str_find(arr, "a", strlen("a"));
+	b = zend_symtable_str_find(arr, "b", strlen("b"));
+	if (!a || (Z_TYPE_P(a) != IS_STRING) || !b || (Z_TYPE_P(b) != IS_STRING)) {
+		php_error(E_WARNING, "Invalid or missing elements");
+		return;
+	}
+
+	do_mygmp_add(return_value, Z_STR_P(a), Z_STR_P(b));
 }
 
 static PHP_FUNCTION(mygmp_random_ints) {
@@ -76,6 +100,7 @@ static zend_function_entry mygmp_functions[] = {
 	PHP_FE(mygmp_version, NULL)
 	PHP_FE(mygmp_get_version, NULL)
 	PHP_FE(mygmp_add, NULL)
+	PHP_FE(mygmp_add_array, NULL)
 	PHP_FE(mygmp_random_ints, NULL)
 	PHP_FE_END
 };
