@@ -160,6 +160,45 @@ static mygmp_object* mygmp_from_zend_object(zend_object* zobj) {
 	return ((mygmp_object*)(zobj + 1)) - 1;
 }
 
+static PHP_METHOD(MyGMP, __construct) {
+	mygmp_object *objval = mygmp_from_zend_object(Z_OBJ_P(getThis()));
+	zval *initval = NULL;
+
+	if (zend_parse_parameters_throw(ZEND_NUM_ARGS(), "|z!", &initval) == FAILURE) {
+		return;
+	}
+
+	if (!initval) {
+		return;
+	}
+
+	switch (Z_TYPE_P(initval)) {
+		case IS_NULL:
+		case IS_FALSE:
+			mpz_set_si(objval->value, 0);
+			break;
+		case IS_TRUE:
+			mpz_set_si(objval->value, 1);
+			break;
+		case IS_LONG:
+			mpz_set_si(objval->value, Z_LVAL_P(initval));
+			break;
+		case IS_DOUBLE:
+			mpz_set_d(objval->value, Z_DVAL_P(initval));
+			break;
+		case IS_STRING:
+			mpz_set_str(objval->value, Z_STRVAL_P(initval), 0);
+			break;
+		default:
+			php_error(E_WARNING, "Unknown initial value type, ignored");
+	}
+}
+
+static zend_function_entry mygmp_methods[] = {
+	PHP_ME(MyGMP, __construct, NULL, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
+	PHP_FE_END
+};
+
 static zend_object* mygmp_ctor(zend_class_entry *ce) {
 	mygmp_object *objval = ecalloc(1, sizeof(mygmp_object) + zend_object_properties_size(ce));
 	mpz_init(objval->value);
@@ -200,7 +239,7 @@ static PHP_MINIT_FUNCTION(mygmp) {
 	gmp_randinit_mt(randstate);
 	gmp_randseed_ui(randstate, seed);
 
-	INIT_CLASS_ENTRY(ce, "MyGMP", NULL);
+	INIT_CLASS_ENTRY(ce, "MyGMP", mygmp_methods);
 	mygmp_ce = zend_register_internal_class(&ce);
 	mygmp_ce->create_object = mygmp_ctor;
 
