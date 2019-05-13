@@ -9,6 +9,7 @@
 #include <gmp.h>
 
 static gmp_randstate_t randstate;
+static zend_class_entry *mygmp_ce;
 
 static PHP_FUNCTION(mygmp_version) {
 	php_printf("%s\n", gmp_version);
@@ -146,6 +147,7 @@ static zend_function_entry mygmp_functions[] = {
 
 static PHP_MINIT_FUNCTION(mygmp) {
 	zend_ulong seed;
+	zend_class_entry ce;
 
 	if (FAILURE == php_random_int_silent(0, ZEND_ULONG_MAX, &seed)) {
 		return FAILURE;
@@ -153,6 +155,9 @@ static PHP_MINIT_FUNCTION(mygmp) {
 
 	gmp_randinit_mt(randstate);
 	gmp_randseed_ui(randstate, seed);
+
+	INIT_CLASS_ENTRY(ce, "MyGMP", NULL);
+	mygmp_ce = zend_register_internal_class(&ce);
 
 	return SUCCESS;
 }
