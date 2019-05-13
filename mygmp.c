@@ -145,6 +145,50 @@ static zend_function_entry mygmp_functions[] = {
 	PHP_FE_END
 };
 
+static zend_object_handlers mygmp_handlers;
+
+typedef struct _mygmp_object {
+	mpz_t value;
+	zend_object std;
+} mygmp_object;
+
+static zend_object* mygmp_to_zend_object(mygmp_object* objval) {
+	return ((zend_object*)(objval + 1)) - 1;
+}
+
+static mygmp_object* mygmp_from_zend_object(zend_object* zobj) {
+	return ((mygmp_object*)(zobj + 1)) - 1;
+}
+
+static zend_object* mygmp_ctor(zend_class_entry *ce) {
+	mygmp_object *objval = ecalloc(1, sizeof(mygmp_object) + zend_object_properties_size(ce));
+	mpz_init(objval->value);
+
+	zend_object* ret = mygmp_to_zend_object(objval);
+	zend_object_std_init(ret, ce);
+	object_properties_init(ret, ce);
+	ret->handlers = &mygmp_handlers;
+
+	return ret;
+}
+
+static zend_object* mygmp_clone(zval *srcval) {
+	zend_object *zsrc = Z_OBJ_P(srcval);
+	zend_object *zdst = mygmp_ctor(zsrc->ce);
+	zend_objects_clone_members(zdst, zsrc);
+
+	mygmp_object *src = mygmp_from_zend_object(zsrc);
+	mygmp_object *dst = mygmp_from_zend_object(zdst);
+	mpz_set(dst->value, src->value);
+	return zdst;
+}
+
+static void mygmp_free(zend_object *zobj) {
+	mygmp_object *obj = mygmp_from_zend_object(zobj);
+	mpz_clear(obj->value);
+	zend_object_std_dtor(zobj);
+}
+
 static PHP_MINIT_FUNCTION(mygmp) {
 	zend_ulong seed;
 	zend_class_entry ce;
@@ -158,6 +202,12 @@ static PHP_MINIT_FUNCTION(mygmp) {
 
 	INIT_CLASS_ENTRY(ce, "MyGMP", NULL);
 	mygmp_ce = zend_register_internal_class(&ce);
+	mygmp_ce->create_object = mygmp_ctor;
+
+	memcpy(&mygmp_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	mygmp_handlers.offset = XtOffsetOf(mygmp_object, std);
+	mygmp_handlers.clone_obj = mygmp_clone;
+	mygmp_handlers.free_obj = mygmp_free;
 
 	return SUCCESS;
 }
